@@ -1,7 +1,13 @@
 ##!/bin/bash
 # we: west metatool shorthand (for Zephyr builds)
+# Copyright (c) 2024 Bluenetics GmbH
+# SPDX-License-Identifier: Apache-2.0
 
-   if [ "$*" == "-?" ] || [ "$*" == "--help" ]; then
+#-------------------------------------------------------------------------------
+# pimp -?;  pimp --help   # show usage
+#-------------------------------------------------------------------------------
+
+   if [ "$*" == "-?" ] || [ "$*" == "--help" ] || [ "$*" == "--?" ]; then
       echo '   usage: we                  # build & run in cur. dir (dongle hex => $TMP)'
       echo '          we <project>        # build & run <project>'
       echo '          we -b               # build project in current directory'
@@ -10,11 +16,14 @@
       echo '          we -d               # build & run on dongle'
       echo '          we -e               # show board and zephyr setup'
       echo '          we -f               # flash binary to target'
+      echo '          we -l               # list Zephyr version labels'
+      echo '          we -L               # list Zephyr version labels with path'
       echo '          we -k               # open Kconfig menu'
       echo '          we -p               # pristine build/flash/run in cur. dir (dongle hex => $TMP)'
       echo '          we -r               # run built project'
       echo '          we -r 19024         # run built project, send output to port 19024'
-      echo '          we -?               # show usage'
+      echo ''
+      echo '          . we z3.6.0:        # activate labeled Zephyr environment!'
 
       if [ "$*" == "--help" ]; then
         echo ''
@@ -25,8 +34,9 @@
       fi
 
       echo ''
-      echo '          we --version        # print version'
+      echo '          we -?               # show usage'
       echo '          we --help           # comprehensive help'
+      echo '          we --version        # print version'
 
       if [ "$*" == "--help" ]; then
         echo '          we --dongle-osx     # print dongle device (or list of) on OSX'
@@ -44,22 +54,69 @@
         echo '          we --telnet 19024   # run a telnet terminal using port 19024'
         echo '          we --tio            # run a tio terminal with auto USB detection'
         echo '          we --tio /dev/usb12 # run a tio terminal woth given USB device'
+        echo ''
+        echo "          . we z3.6.0:                   # activate Zephyr environment!"
+        echo "          we -! z3.6.0: 'Zephyr z3.6.0'  # define Zephyr label"
       fi
 
       echo ''
       echo '          we $ZEPHYR_BASE/samples/hello_world'
       echo ''
-      echo '   see also: bd, we, zenv'
-      exit 0
+      echo '   see also: bd, cl, run, we'
+
+      return 0 2>/dev/null || exit 0  # safe return/exit
    fi
 
-#===============================================================================
-# print version: zenv --version
-#===============================================================================
+#-------------------------------------------------------------------------------
+# we --version   # print version
+#-------------------------------------------------------------------------------
 
-   if [ "$*" == "--version" ]; then
-      echo "1.0.15"
+   if [ "$*" == "--version" ] || [ "$*" == "--v" ]; then
+      echo "1.0.16"
       return 0 2>/dev/null || exit 0  # safe return/exit
+   fi
+
+#-------------------------------------------------------------------------------
+# examine whether this script is running in sourced/unsourced mode
+# - note: each dispatching clause needs to unset _SOURCED
+#-------------------------------------------------------------------------------
+
+   (return 0 2>/dev/null) && _SOURCED=1 || _SOURCED=0  # determine _SOURCED
+
+#-------------------------------------------------------------------------------
+# . we <label:>   # select zephyr version
+#-------------------------------------------------------------------------------
+
+   if [ "${1%':'}" != "$1" ] && [ "$2" == "" ]; then
+      if [ "$_SOURCED" != 0 ]; then
+         _LABEL=${1%':'}
+         _DIR=$(idb -r $ETC/zephyr $_LABEL dir)
+         if [ -d "$_DIR" ]; then
+            source pimp --activate $_DIR   # activate virtual environment
+         else
+            ec -r "error: . we $*"
+            echo  "       bad virtual environment label"
+         fi
+         unset _DIR
+         unset _LABEL
+         unset _SOURCED
+         return 0 2>/dev/null || exit 0  # safe return/exit
+      else
+         ec -r "error: we $*" >&2
+         echo  "       source this command line: . we $*" >&2
+         return 1 2>/dev/null || exit 1  # safe return/exit
+      fi
+   fi
+
+#-------------------------------------------------------------------------------
+# no sourced mode beyond this line!
+#-------------------------------------------------------------------------------
+
+	 if [ "$_SOURCED" != 0 ]; then
+      ec -r "error: . we $*" >&2
+      echo  "       bad command line: . we $*" >&2
+      unset _SOURCED
+      return 1 2>/dev/null || exit 1  # safe return/exit
    fi
 
 #===============================================================================
@@ -666,6 +723,84 @@
       fi
       exit 0
    fi
+
+#===============================================================================
+# we -l  # list labels of workdir info database
+# we -L  # list labels of workdir info database with path
+#===============================================================================
+
+	if [ "$*" == "-l" ] || [ "$*" == "-L" ]; then
+     ETC=$ETC
+
+     if [ "$ETC" == "" ]; then
+        ec -r "cannot access Zephyr version database: wd $*"
+        echo  '  environment variable $ETC is not defined'
+        exit 1
+     fi
+
+     if [ ! -d "$ETC" ]; then
+        ec -r "no directory: ETC=$ETC"
+        exit 1
+     fi
+
+     ec -g 'Zephyr version labels:'
+     IDB=$ETC/zephyr
+
+     if [ -d "$IDB" ]; then
+	      for _KEY in `ls $IDB`
+	      do
+	         _INFO=$(idb -r $IDB $_KEY info)
+	         _DIR=$(idb -r $IDB $_KEY dir)
+
+           _LAB=$_KEY:'                              '
+           if [ "$*" == "-L" ]; then
+	            echo "  ${_LAB:0:12} $_INFO   ($_DIR)"
+           else
+	            echo "  ${_LAB:0:12} $_INFO"
+           fi
+	      done
+     fi
+
+     exit 0
+  fi
+
+#===============================================================================
+# we -! <label> <info> <dir>
+#===============================================================================
+
+	if [ "$1" == "-!" ] && [ "$2" != "" ] && [ "$3" != "" ] \
+                      && [ "$5" == "" ]; then
+     if [ "$ETC" == "" ]; then
+        ec -r "cannot add Zephyr version label: we $*"
+        echo  '  environment variable ETC is not defined'
+        echo  '  suggestion: $ export ETC=~/etc   # or something similar'
+        exit 1
+     fi
+
+     if [ ! -d "$ETC" ]; then
+        ec -r "no directory: ETC=$ETC"
+        exit 1
+     fi
+
+     IDB=$ETC/zephyr
+     if [ ! -d $IDB ]; then
+        idb -c $IDB      # create workdir info database
+     fi
+
+     LABEL=${2%":"}      # strip off ':'
+     if [ "$LABEL" == "$2" ]; then    # missing colon at end?
+       ec -r "missing ':' at end of label: we $*"
+       echo "  => try: we -! $2: '$3' $4"
+     else  # all good => define label in info database
+		     idb -s $IDB "$LABEL" info "$3"
+		     if [ "$4" == "" ]; then          # current directory
+		        idb -s $IDB "$LABEL" dir $(pwd)
+		     else                             # given directory by $4
+		        idb -s $IDB "$LABEL" dir "$4"
+		     fi
+     fi
+     exit 0
+  fi
 
 #===============================================================================
 # cannot deal with anything else ...
