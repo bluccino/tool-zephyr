@@ -8,61 +8,58 @@
 #-------------------------------------------------------------------------------
 
    if [ "$*" == "-?" ] || [ "$*" == "--help" ] || [ "$*" == "--?" ]; then
-      echo '   usage: we                  # build & run in cur. dir (dongle hex => $TMP)'
-      echo '          we <project>        # build & run <project>'
-      echo '          we -b               # build project in current directory'
-      echo '          we -b <project>     # build specific project'
-      echo '          we -c               # clean build folder'
-      echo '          we -d               # build & run on dongle'
-      echo '          we -e               # show board and zephyr setup'
-      echo '          we -f               # flash binary to target'
-      echo '          we -l               # list Zephyr version labels'
-      echo '          we -L               # list Zephyr version labels with path'
-      echo '          we -k               # open Kconfig menu'
-      echo '          we -p               # pristine build/flash/run in cur. dir (dongle hex => $TMP)'
-      echo '          we -r               # run built project'
-      echo '          we -r 19024         # run built project, send output to port 19024'
-      echo ''
-      echo '          . we z3.6.0:        # activate labeled Zephyr environment!'
+      ec -g   "usage: we - Zephyr build tool (version $(we --version))"
+      echo    '  we                  # build & run in cur. dir (dongle hex => $TMP)'
+      echo    '  we <project>        # build & run <project>'
+      echo    '  we -b               # build project in current directory'
+      echo    '  we -b <project>     # build specific project'
+      echo    '  we -c               # clean build folder'
+      echo    '  we -d               # build & run on dongle'
+      echo    '  we -e               # show board and zephyr setup'
+      echo    '  we -f               # flash binary to target'
+      echo    '  we -k               # open Kconfig menu'
+      echo    '  we -p               # pristine build/flash/run in cur. dir (dongle hex => $TMP)'
+      echo    '  we -r               # run built project'
+      echo    '  we -r 19024         # run built project, send output to port 19024'
+      ec -g   'deal with Zephyr version labels:'
+      echo    '  . we z3.6:          # activate labeled Zephyr environment!'
+      echo    "  we -! z3.6: comment # define Zephyr label"
+      echo    '  we -l               # list Zephyr version labels'
+      echo    '  we -L               # list Zephyr version labels with path'
 
-      if [ "$*" == "--help" ]; then
-        echo ''
-        echo '          we -t0              # start tio terminal with auto USB detection'
-        echo '          we -t1              # start telnet terminal on port 19024'
-        echo '          we -t2              # start telnet terminal on port 19025'
-        echo '          we -t3              # start telnet terminal on port 19026'
+      if [ "$*" != "-?" ]; then
+        ec -g 'running a terminal:'
+        echo  '  we -t0              # start tio terminal with auto USB detection'
+        echo  '  we -t1              # start telnet terminal on port 19024'
+        echo  '  we -t2              # start telnet terminal on port 19025'
+        echo  '  we -t3              # start telnet terminal on port 19026'
       fi
 
-      echo ''
-      echo '          we -?               # show usage'
-      echo '          we --help           # comprehensive help'
-      echo '          we --version        # print version'
+      ec -g   'miscellaneous:'
+      echo    '  we -?               # show usage'
+      echo    '  we --help           # comprehensive help'
+      echo    '  we --version        # print version'
 
-      if [ "$*" == "--help" ]; then
-        echo '          we --dongle-osx     # print dongle device (or list of) on OSX'
-        echo '          we --dongle-wsl     # print dongle device (or list of) on WSL'
-        echo '          we --flash-dongle   # flash to dongle(s)'
-        echo '          we --help-init      # help on west init'
-#       echo '          we --help-dk832     # how to build & run on nRF52832 DK'
-#       echo '          we --help-dongle    # how to build & run for nRF52840 dongle'
-        echo '          we --help-qemu      # how to build & run for QEMU'
-        echo ''
-        echo '          we --boards         # list supported HW boards by west'
-        echo '          we --copy-tmp       # copy zephyr.hex to $TMP'
-        echo '          we --pristine       # pristine build without flash/run'
-        echo '          we --telnet         # run a telnet terminal'
-        echo '          we --telnet 19024   # run a telnet terminal using port 19024'
-        echo '          we --tio            # run a tio terminal with auto USB detection'
-        echo '          we --tio /dev/usb12 # run a tio terminal woth given USB device'
-        echo ''
-        echo "          . we z3.6.0:                   # activate Zephyr environment!"
-        echo "          we -! z3.6.0: 'Zephyr z3.6.0'  # define Zephyr label"
+      if [ "$*" != "-?" ]; then
+        echo  '  we --boards         # list supported HW boards by west'
+        echo  '  we --copy-tmp       # copy zephyr.hex to $TMP'
+        echo  '  we --dongle-osx     # print dongle device (or list of) on OSX'
+        echo  '  we --dongle-wsl     # print dongle device (or list of) on WSL'
+        echo  '  we --flash-dongle   # flash to dongle(s)'
+        echo  '  we --help-init      # help on west init'
+#       echo  '  we --help-dk832     # how to build & run on nRF52832 DK'
+#       echo  '  we --help-dongle    # how to build & run for nRF52840 dongle'
+        echo  '  we --help-qemu      # how to build & run for QEMU'
+        echo  '  we --pristine       # pristine build without flash/run'
+        echo  '  we --telnet         # run a telnet terminal'
+        echo  '  we --telnet 19024   # run a telnet terminal using port 19024'
+        echo  '  we --tio            # run a tio terminal with auto USB detection'
+        echo  '  we --tio /dev/usb12 # run a tio terminal woth given USB device'
+        echo  '  we $ZEPHYR_BASE/samples/hello_world'
       fi
 
-      echo ''
-      echo '          we $ZEPHYR_BASE/samples/hello_world'
-      echo ''
-      echo '   see also: bd, cl, run, we'
+      echo    ''
+      echo    '  see also: bd, cl, run, we'
 
       return 0 2>/dev/null || exit 0  # safe return/exit
    fi
