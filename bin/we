@@ -1,0 +1,676 @@
+##!/bin/bash
+# we: west metatool shorthand (for Zephyr builds)
+
+   if [ "$*" == "-?" ] || [ "$*" == "--help" ]; then
+      echo '   usage: we                  # build & run in cur. dir (dongle hex => $TMP)'
+      echo '          we <project>        # build & run <project>'
+      echo '          we -b               # build project in current directory'
+      echo '          we -b <project>     # build specific project'
+      echo '          we -c               # clean build folder'
+      echo '          we -d               # build & run on dongle'
+      echo '          we -e               # show board and zephyr setup'
+      echo '          we -f               # flash binary to target'
+      echo '          we -k               # open Kconfig menu'
+      echo '          we -p               # pristine build/flash/run in cur. dir (dongle hex => $TMP)'
+      echo '          we -r               # run built project'
+      echo '          we -r 19024         # run built project, send output to port 19024'
+      echo '          we -?               # show usage'
+
+      if [ "$*" == "--help" ]; then
+        echo ''
+        echo '          we -t0              # start tio terminal with auto USB detection'
+        echo '          we -t1              # start telnet terminal on port 19024'
+        echo '          we -t2              # start telnet terminal on port 19025'
+        echo '          we -t3              # start telnet terminal on port 19026'
+      fi
+
+      echo ''
+      echo '          we --version        # print version'
+      echo '          we --help           # comprehensive help'
+
+      if [ "$*" == "--help" ]; then
+        echo '          we --dongle-osx     # print dongle device (or list of) on OSX'
+        echo '          we --dongle-wsl     # print dongle device (or list of) on WSL'
+        echo '          we --flash-dongle   # flash to dongle(s)'
+        echo '          we --help-init      # help on west init'
+#       echo '          we --help-dk832     # how to build & run on nRF52832 DK'
+#       echo '          we --help-dongle    # how to build & run for nRF52840 dongle'
+        echo '          we --help-qemu      # how to build & run for QEMU'
+        echo ''
+        echo '          we --boards         # list supported HW boards by west'
+        echo '          we --copy-tmp       # copy zephyr.hex to $TMP'
+        echo '          we --pristine       # pristine build without flash/run'
+        echo '          we --telnet         # run a telnet terminal'
+        echo '          we --telnet 19024   # run a telnet terminal using port 19024'
+        echo '          we --tio            # run a tio terminal with auto USB detection'
+        echo '          we --tio /dev/usb12 # run a tio terminal woth given USB device'
+      fi
+
+      echo ''
+      echo '          we $ZEPHYR_BASE/samples/hello_world'
+      echo ''
+      echo '   see also: bd, we, zenv'
+      exit 0
+   fi
+
+#===============================================================================
+# print version: zenv --version
+#===============================================================================
+
+   if [ "$*" == "--version" ]; then
+      echo "1.0.15"
+      return 0 2>/dev/null || exit 0  # safe return/exit
+   fi
+
+#===============================================================================
+# $ we --help-init  # help on west init
+#===============================================================================
+
+   if [ "$*" == "--help-init" ]; then
+      ec -g 'help on west init'
+
+      ec -y 'standard west init'
+      echo  '  $ mkdir z3.6.99         # create folder for actual zephyr release'
+      echo  '  $ cd z3.6.99            # vist folder for actual zephyr release'
+      echo  '  $ vamos -c @z3.6.99     # create virtual python environment'
+      echo  '  $ vamos                 # activate virtual python environment'
+      echo  '  $ pip install west'     # install west
+      ec -c '  $ west init             # init install folder with zephy stuff'
+      echo  '  $ west update           # update zephyr installation'
+
+      ec -y 'install specific zephyr installation (e.g., z3.6.0)'
+      echo  '  $ mkdir z3.6.0          # create folder for actual zephyr release'
+      echo  '  $ cd z3.6.0             # vist folder for actual zephyr release'
+      echo  '  $ vamos -c @z3.6.0      # create virtual python environment'
+      echo  '  $ vamos                 # activate virtual python environment'
+      echo  '  $ pip install west'     # install west
+      ec -c '  $ west init --mr v3.6.0 # init install folder with zephyr stuff'
+      echo  '  $ west update           # update zephyr installation'
+
+      exit 0
+   fi
+
+#===============================================================================
+# how to build and run on QEMU
+#===============================================================================
+
+   if [ "$*" == "--help-qemu" ]; then
+      ec -g 'how to build & run for QEMU'
+      echo  '  navigate to the Zephyr project directory'
+      ec -y 'choose one of the lines below to define emulator board'
+      echo  '  $ export BOARD=qemu_cortex_m3  (QEMU cortex M3 board)'
+      echo  '  $ export BOARD=qemu_x86        (QEMU x86 board)'
+      ec -y 'build and run:'
+      echo  '  $ we  #build and run'
+      ec -y 'in separate steps:'
+      echo  '  $ we -b  # build project'
+      echo  '  $ we -r  # run project'
+      exit 0
+   fi
+
+#===============================================================================
+# $ we -e  # show board and zephyr setup'
+#===============================================================================
+
+   if [ "$*" == "-e" ]; then
+      ec -g 'West:'
+      if [ "`which west`" == "" ]; then
+         ec -r "  west is not available (setup a zephyr environment)"
+      else
+         echo "  `which west`"
+      fi
+
+        # board settings
+
+      bash bd.sh
+
+      ec -g 'Zephyr version:'
+      echo "  $ZVERSION (path: $ZEPHYR), BOARD: $BRDID ($BOARD)"
+
+      return 0 2>/dev/null || exit 0  # safe return/exit
+   fi
+
+#===============================================================================
+# check if west is available
+#===============================================================================
+
+   if [ "`which west`" == "" ]; then
+      ec -r "error: west is not available"
+      echo  '=> check activation of proper virtual Zephyr environment'
+   fi
+
+#===============================================================================
+# set build folder
+#===============================================================================
+
+   if [ "$BUILD" == "" ]; then
+      export BUILD=build
+#     export BUILD=build_$BOARD
+   fi
+
+#===============================================================================
+# we -k   # open Kconfig menu
+#===============================================================================
+
+   if [ "$*" == "-k" ]; then
+      ec -y 'west  build -t menuconfig'
+      west  build -t menuconfig || exit 1
+      exit 0
+   fi
+
+#===============================================================================
+# pristine build and run: 'we -p'
+#===============================================================================
+
+   if [ "$*" == "-p" ] || [ "$*" == "--pristine" ]; then
+      PROJECT="."
+
+      ec -y west build --pristine -b $BOARD $PROJECT
+      # we -c
+      west build --pristine -b $BOARD $PROJECT || exit 1
+
+        # if board identifier refers to a dongle we copy zephyr.hex to $TMP
+        # else we run program
+
+      if [ "$BOARD" == "nrf52840dongle_nrf52840" ]; then
+        we --copy-tmp || exit 1
+      elif [ "$*" != "--pristine" ]; then
+        if [ "$BOARD" != "qemu_x86" ] && [ "$BOARD" != "qemu_cortex_m3" ]; then
+          we -f || exit 1  # flash program
+        fi
+        we -r || exit 1  # run program
+      fi
+      exit 0
+   fi
+
+#===============================================================================
+# copy zephyr.hex to $TMP directory: we --copy-tmp
+# - if board identifier refers to a dongle we first check whether
+#   environment variable $TMP refers to a valid directory. If yes,
+#   we copy zephyr.hex to the $TMP directory
+#===============================================================================
+
+   if [ "$*" == "--copy-tmp" ]; then
+      if [ "$TMP" == "" ]; then
+        ec -r 'error: empty environvent variable TMP'
+        exit 1
+      fi
+      if [ ! -d "$TMP" ]; then
+        ec -r "error: no directory: TMP=$TMP"
+        exit 1
+      fi
+
+        # all is well => copy now zephyr.hex to $TMP
+
+      ec -y "cp $BUILD/zephyr/zephyr.hex $TMP"
+      cp $BUILD/zephyr/zephyr.hex $TMP || exit 1
+      exit 0
+   fi
+
+#===============================================================================
+# build program: we -b <project>
+#===============================================================================
+
+   if [ "$1" == "-b" ] && [ "$2" == "" ]; then
+      PROJECT="."
+      west build -b $BOARD $PROJECT || exit 1
+
+        # in case of a dongle create zip file which we can flash to the dongle
+
+      if [ "$BOARD" == "nrf52840dongle_nrf52840" ]; then
+         ZIP=$BUILD/zephyr/app-dongle.zip
+         we ---create-zip $ZIP
+      fi
+      exit 0
+   fi
+
+#===============================================================================
+# build (without run): we -b <project>
+#===============================================================================
+
+   if [ "$1" == "-b" ] && [ "$2" != "" ]; then
+      PROJECT=$2
+      ec -y west build -b $BOARD $PROJECT
+      west build -b $BOARD $PROJECT || exit 1
+      exit 0
+   fi
+
+#===============================================================================
+# clean build folder: we -c
+#===============================================================================
+
+   if [ "$*" == "-c" ]; then
+      rm -rf build || exit 1
+      rm -rf build_* || exit 1
+      exit 0
+   fi
+
+#===============================================================================
+# flash binary to target: we -f
+# - undef SEGGER if you want to flash with west flash runner
+# - export SEGGER=xxxxxxxxx for flashing with nrfjprog
+#===============================================================================
+
+   if [ "$*" == "-f" ]
+   then
+#     if [ "$SEGGER" != "" ]; then  # if SEGGER is defined then use nrfjprog
+#        ec -y "nrfjprog --reset --family nRF52 --program" \
+#              "$BUILD/zephyr/zephyr.hex --snr ${SEGGER}"
+#        nrfjprog --reset --family nRF52 --program \
+#               $BUILD/zephyr/zephyr.hex --snr ${SEGGER} || exit 1
+#     else
+          if [ "$BOARD" == "nrf52840dongle_nrf52840" ]; then
+              we --flash-dongle
+          else
+              ec -y "west flash --build-dir build_$BOARD"
+              west flash --build-dir $BUILD || exit 1
+          fi
+#     fi
+      exit 0
+   fi
+
+
+
+#===============================================================================
+# we -d   # build & run on dongle'
+#===============================================================================
+
+   if [ "$*" == "-d" ]
+   then
+      ec -g "=== building ..."
+      we -b
+
+      exit 0
+   fi
+
+#===============================================================================
+# list (west) supported HW boards: we --boards
+#===============================================================================
+
+   if [ "$1" == "--boards" ]; then
+      west boards
+      exit 0
+   fi
+
+#===============================================================================
+# run (a built) program: we -r <port>
+# - for BOARD=qemu_x86 or BOARD=qemu_qemu_cortex_m3 => QEMU emulator is invoked
+# - otherwise JLinkExe is consulted to run application with output sent to
+#   telnet port $TELPORT (if not set then port 19024 is used by default)
+#===============================================================================
+
+   if [ "$1" == "-r" ] && [ "$3" == "" ]; then
+      if [ "$BOARD" == "qemu_x86" ] || [ "$BOARD" == "qemu_cortex_m3" ]; then
+        ec -y west build -t run
+        west build -t run || exit 1
+        exit 0
+      fi
+
+      if [ "$TELPORT" == "" ]; then
+         TELPORT=19024
+      fi
+
+      if [ "$2" != "" ]; then
+         TELPORT=$2
+      fi
+
+      if [ "$SEGGER" == "" ]; then
+         ec -r "error: SEGGER j-link ID is not defined"
+         echo  '       please set: export SEGGER=xxxxxxxxx (e.g., export SEGGER=682805980)'
+         echo  '       (find SEGGER j-link ID on label of j-link adapter box)'
+         exit 1
+      fi
+
+        # run program ...
+
+      if [ "`which JLinkExe`" == "" ]; then
+         ec -r 'error: JLinkExe is not installed!'
+         echo  '       please install JLinkExe first before proceeding'
+         exit 1
+      fi
+
+      CMD1="JLinkExe -device NRF52 -speed 4000 -if SWD -RTTTelnetport $TELPORT"
+      CMD2="-AutoConnect 1 -SelectEmuBySN $SEGGER"
+      ec -y $CMD1' '$CMD2
+
+      JLinkExe -device NRF52 -speed 4000 -if SWD -RTTTelnetport $TELPORT \
+               -AutoConnect 1 -SelectEmuBySN $SEGGER || exit 1
+      exit 0
+   fi
+
+#===============================================================================
+# run a telnet terminal: we --telnet <port>
+# - if <port> argument is not specified the port specified by $TELPORT is used
+# - if $TELPORT is also not specified then default port 19024 is used
+#===============================================================================
+
+   if [ "$1" == "--telnet" ]; then
+      if [ "$3" != "" ]; then
+        ec -r "error: we $*"
+        we -?
+        exit 1
+      fi
+
+      if [ "`which telnet`" == "" ]; then
+         ec -r 'error: telnet is not installed!'
+         echo  '       please install telnet first, before proceeding'
+         exit 1
+      fi
+
+      if [ "$TELPORT" == "" ]; then
+         TELPORT=19024
+      fi
+
+      if [ "$2" != "" ]; then
+         TELPORT=$2
+      fi
+
+      while [ "1" == "1" ]; do
+         ec -y "telnet localhost $TELPORT (quit with <ctrl-c>)"
+         telnet localhost $TELPORT  # telnet connect using local port $TELPORT
+         clear
+         ec -g "Telnet Terminal: connect to localhost: $TELPORT"
+         echo  "quit with <ctrl-c>"
+         sleep 0.5
+      done
+      exit 0
+   fi
+
+#===============================================================================
+# run a tio terminal: we --tio <usb>
+# - if <usb> argument is not specified then a trial is made for automatic
+#   identification of a dongle USB device
+#===============================================================================
+
+   if [ "$1" == "--tio" ]; then
+      if [ "$3" != "" ]; then
+        ec -r "error: we $*"
+        we -?
+        exit 1
+      fi
+
+      if [ "`which tio`" == "" ]; then
+         ec -r 'error: tio is not installed!'
+         echo  '       please install tio first, before proceeding'
+         exit 1
+      fi
+
+        # get a list of possible USB devices
+
+      if [ "$2" != "" ]; then
+         USB=$2; N=1
+      else
+         USB=`ls /dev/tty* | grep usb | grep -v usbmodem000`
+         N=`ls /dev/tty* | grep usb | grep -v usbmodem000 | wc -w`
+      fi
+
+      if [ $N == 0 ]; then
+         ec -r 'no USB devices found'
+         exit 1
+      elif [ $N == 1 ]; then
+         ec -y "tio $USB  # quit with <ctrl-t> <q>"
+         tio $USB
+         exit 0
+      else
+           select DEV in $USB
+          do
+            ec -y "tio $DEV  # quit with <ctrl-t> <q>"
+             tio $DEV
+             exit 0
+          done
+      fi
+
+      exit 0
+   fi
+
+
+
+#===============================================================================
+# run a tio terminal: we --tio-wsl <usb> # To run on Windows WSL
+# - if <usb> argument is not specified then a trial is made for automatic
+#   identification of a dongle USB device
+#===============================================================================
+
+   if [ "$1" == "--tio-wsl" ]; then
+      if [ "$3" != "" ]; then
+        ec -r "error: we $*"
+        we -?
+        exit 1
+      fi
+
+      if [ "`which tio`" == "" ]; then
+         ec -r 'error: tio is not installed!'
+         echo  '       please install tio first, before proceeding'
+         exit 1
+      fi
+
+        # get a list of possible USB devices
+
+      if [ "$2" != "" ]; then
+         USB=$2; N=1
+      else
+         DEVICES=`ls /dev/serial/by-id`
+         USB=''
+         for DEV in $DEVICES
+         do
+            USB=$USB' /dev/serial/by-id/'$DEV
+         done
+         # ec -y $USB
+         N=`ls /dev/serial/by-id | wc -w`
+         # ec -y $N
+      fi
+
+      if [ $N == 0 ]; then
+         ec -r 'no USB devices found'
+         exit 1
+      elif [ $N == 1 ]; then
+         ec -y "tio $USB  # quit with <ctrl-t> <q>"
+         tio $USB
+         exit 0
+      else
+   	     select DEV in $USB
+	       do
+            ec -y "tio $DEV  # quit with <ctrl-t> <q>"
+	          tio $DEV
+	          exit 0
+	       done
+      fi
+
+      exit 0
+   fi
+
+#===============================================================================
+# we --flash-dongle   # flash to dongle(s)
+#===============================================================================
+
+   if [ "$*" == "--flash-dongle" ]; then
+      if [ -d /dev/serial ]; then  # then we are on WSL platform
+         we ---flash-dongle-wsl
+      else                         # else we are on OSX or Linux platform
+         we ---flash-dongle-osx
+      fi
+      exit 0
+   fi
+
+#===============================================================================
+# we --dongle-osx   # print dongle device (or list of)'
+#===============================================================================
+
+   if [ "$*" == "--dongle-osx" ]; then
+    _DEVICES=`ls /dev/tty* | grep usb | grep -v usbmodem000`
+    #echo $_DEVICES
+
+    for _DEV in $_DEVICES
+    do
+       _LEN=`echo $_DEV | wc -c`
+       _EXPECT=`echo /dev/tty.usbmodemF53C902FCD6F1 | wc -c`
+
+       if [ "$_LEN" == "$_EXPECT" ]; then
+          echo $_DEV
+       fi
+    done
+    exit 0
+
+    _N=`ls /dev/tty* | grep usb | grep -v usbmodem000 | wc -w`
+
+      exit 0
+   fi
+
+#===============================================================================
+# we --dongle-wsl   # print dongle device (or list of)'
+#===============================================================================
+
+   if [ "$*" == "--dongle-wsl" ]; then
+      _DEVICES=`ls /dev/serial/by-id | grep Bootloader`
+      #echo $_DEVICES
+
+      for _DEV in $_DEVICES
+      do
+         echo /dev/serial/by-id/$_DEV
+      done
+      exit 0
+   fi
+
+#===============================================================================
+# we ---create-zip <zipfile>  # create zip file which we can flash to the dongle
+#===============================================================================
+
+   if [ "$1" == "---create-zip" ] && [ "$2" != "" ] && [ "$3" == "" ]; then
+      ec -g "=== creating zip file for dongle ..."
+      ZIP=$2
+
+      OPTS1="--hw-version 52 --sd-req=0x00  --application $BUILD/zephyr/zephyr.hex"
+      OPTS2='--application-version'
+
+      ec -y "rfutil nrf5sdk-tools pkg generate  $OPTS1 $OPTS2 1 $ZIP"
+      nrfutil nrf5sdk-tools pkg generate  $OPTS1 $OPTS2 1 $ZIP || exit 1
+
+      exit 0
+   fi
+
+#===============================================================================
+# we ---flash-dongle-osx   # build & run on dongle on OSX platform
+#===============================================================================
+
+   if [ "$*" == "---flash-dongle-osx" ]; then
+
+        # create a zip file which we can flash to the dongle
+
+      ZIP=$BUILD/zephyr/app-dongle.zip
+      #we ---create-zip $ZIP
+
+        # there can be multiple dongles with active bootloaders
+
+      DEVICES=`we --dongle-osx`
+      #ec -m $DEVICES
+
+      for DEV in $DEVICES
+      do
+         ec -g "=== flashing to dongle ($DEV) ..."
+
+         ec -y "nrfutil dfu usb-serial -pkg $ZIP -p $DEV"
+         nrfutil dfu usb-serial -pkg $ZIP -p $DEV
+      done
+      exit 0
+   fi
+
+#===============================================================================
+# we ---flash-dongle-wsl   # build & run on dongle on WSL platform
+#===============================================================================
+
+   if [ "$*" == "---flash-dongle-wsl" ]; then
+
+        # create a zip file which we can flash to the dongle
+
+      ZIP=$BUILD/zephyr/app-dongle.zip
+      #we ---create-zip $ZIP
+
+         # there can be multiple we flash multiple
+
+      DEVICES=`we --dongle-wsl`
+      ##ec -m $DEVICES
+
+      for DEV in $DEVICES
+      do
+         ec -g "=== flashing to dongle ($DEV) ..."
+
+         ec -y "nrfutil dfu usb-serial -pkg $ZIP -p $DEV"
+         nrfutil dfu usb-serial -pkg $ZIP -p $DEV
+      done
+      exit 0
+   fi
+
+#===============================================================================
+# start tio terminal with auto USB detection: we -t0
+#===============================================================================
+
+   if [ "$*" == "-t0" ]; then
+      if [ -d "/dev/serial" ]
+      then # windows WSL system
+         we --tio-wsl || exit 1
+      else # macOS or Linux system
+         we --tio || exit 1
+      fi
+      exit 0
+   fi
+
+#===============================================================================
+# start telnet on port 19024: we -t1
+#===============================================================================
+
+   if [ "$*" == "-t1" ]; then
+      we --telnet 19024 || exit 1
+      exit 0
+   fi
+
+#===============================================================================
+# start telnet on port 19025: we -t2
+#===============================================================================
+
+   if [ "$*" == "-t2" ]; then
+      we --telnet 19025 || exit 1
+      exit 0
+   fi
+
+#===============================================================================
+# start telnet on port 19026: we -t3
+#===============================================================================
+
+   if [ "$*" == "-t3" ]; then
+      we --telnet 19026 || exit 1
+      exit 0
+   fi
+
+#===============================================================================
+# standard call: we
+#===============================================================================
+
+   if [ "$*" == "" ]; then
+      PROJECT="."
+
+      #ec -y west build -b $BOARD $PROJECT
+      #west build -b $BOARD $PROJECT || exit 1
+      we -b
+
+        # if board identifier refers to a dongle we copy zephyr.hex to $TMP
+        # else we run program
+
+      if [ "$BOARD" == "nrf52840dongle_nrf52840" ]; then
+        # we --copy-tmp || exit 1
+        we --flash-dongle
+      else
+        if [ "$BOARD" != "qemu_x86" ] && [ "$BOARD" != "qemu_cortex_m3" ]; then
+          we -f || exit 1  # flash program
+        fi
+        we -r || exit 1  # run program
+      fi
+      exit 0
+   fi
+
+#===============================================================================
+# cannot deal with anything else ...
+#===============================================================================
+
+   ec -r "error: we $*"
+   we -?
+   exit 1

@@ -1,0 +1,185 @@
+##!/bin/bash
+# cl - clean project directory
+
+   if [ "$*" == "-?" ]; then
+      echo '   usage: cl [-d?] <dir>   # clean project directory (from $BLUCO root)'
+      echo '          cl               # clean current directory'
+      echo '          cl study         # clean study directory'
+      echo '          cl -d study      # clean study directory'
+      echo '          cl -?            # show usage'
+      echo '          cl --version     # print version'
+      echo '   see also: cl, ec'
+      exit 0
+   fi
+
+#===============================================================================
+# print version: cl --version
+#===============================================================================
+
+   if [ "$*" == "--version" ]; then
+      echo "1.0.1"; exit 0
+   fi
+
+#===============================================================================
+# clean current directory
+#===============================================================================
+
+   if [ "$*" == "." ]; then
+      ec -y "=> cleaning current directory"
+      cl -d `pwd`
+      exit 0
+   fi
+
+   if [ "$*" == "" ]; then
+      cl .
+      exit 0
+   fi
+
+#===============================================================================
+# handle -c option clean specified directory
+#===============================================================================
+
+   if [ "$1" == "-d" ]; then
+       if [ -d "$2" ]; then
+           cd $2    # change to specified directory
+           DIR=`pwd`
+           MSG=0
+
+              # show relevant directory contents ...
+
+           #c -c "directory " `pwd` ":"
+           #ls
+
+              # apply brute force to build* folders
+
+           BUILDDIRS=`echo build*`
+           if [ "$BUILDDIRS" != "build*" ]; then
+             for BUILD in $BUILDDIRS
+             do
+                ec -c "  cleaning $BUILD directory @ $DIR"
+             done
+             rm -rf build*
+           fi
+
+              # now go to work ...
+
+           if [ -d "build_nrf"* ]; then
+               if [ "$MSG" == "0" ]; then
+                  ec -c "  cleaning $2 ..."
+                  MSG=1
+               fi
+
+                 # echo which folder to be deleted
+
+               ec -b "      remove directory `echo build_nrf*`"
+               rm -rf build_nrf*
+
+               OVL=`pwd`/overlay
+      			   if [ -f $OVL/bin/clean ]; then
+    			         cd $OVL && bin/clean
+                   cd $DIR
+    			     fi
+           fi
+
+           if [ -d "build" ]; then
+               if [ "$MSG" == "0" ]; then
+                  ec -c "  cleaning $2 ..."
+                  MSG=1
+               fi
+               ec -b "      remove directory $2/build"
+               rm -rf build
+
+               OVL=`pwd`/overlay
+      			   if [ -f $OVL/bin/clean ]; then
+    			         cd $OVL && bin/clean
+                   cd $DIR
+    			     fi
+           fi
+
+           if [ -d "Debug" ]; then
+               if [ "$MSG" == "0" ]; then
+                  ec -c "  cleaning $2 ..."
+                  MSG=1
+               fi
+               ec -b "      remove directory $2/Debug"
+               rm -rf Debug
+           fi
+
+           if [ -d "Output" ]; then
+               if [ "$MSG" == "0" ]; then
+                  ec -c "  cleaning $2 ..."
+                  MSG=1
+               fi
+               ec -b "      remove directory $2/Output"
+               rm -rf Output
+           fi
+
+           if [ -f ".DS_Store" ]; then
+               if [ "$MSG" == "0" ]; then
+                  ec -c "  cleaning $2 ..."
+                  MSG=1
+               fi
+               ec -b "      remove file $2/.DS_Store"
+               rm .DS_Store
+           fi
+
+           #pwd
+           #echo "clean emSession: " *.emSession
+
+           if [ -f *.emSession ]; then
+               if [ "$MSG" == "0" ]; then
+                  ec -c "  cleaning $2 ..."
+                  MSG=1
+               fi
+               ec -b "      remove in $2 file(s) "`echo *.emSession`
+               rm *.emSession
+           fi
+
+           if [ -f *.jlink ]; then
+               if [ "$MSG" == "0" ]; then
+                  ec -c "  cleaning $2 ..."
+                  MSG=1
+               fi
+               ec -b "      remove in $2 file(s) "`echo *.jlink`
+               rm *.jlink
+           fi
+
+           ARGS=`ls`
+           for ARG in $ARGS
+           do
+             if [ -d "$ARG" ]; then
+                #ec -g "   cl -d $DIR/$ARG"
+
+                if [ "$ARG" != "build" ]; then
+                    cl -d "$ARG"
+                fi
+             fi
+           done
+
+       fi
+       exit 0
+   fi
+
+#===============================================================================
+# handle default
+#===============================================================================
+
+   if [ -d "$*" ]; then
+       cl -d "$*"
+       exit 0
+   fi
+
+   GITREP=`python3 $BIN/python/gitrep.py`
+   GITROOT=`python3 $BIN/python/gitroot.py`
+
+   if [ "$GITREP" == "Bluco" ]; then
+      ec -y '  cleaning Bluco repository ...'
+      cl -d $BLUCO/project
+      cl -d $BLUCO/study
+      cl -d $BLUCO/lib
+      cl -d $BLUCO/bluco
+      cl -d $BLUCO/kernel
+   else
+      ec -y "  cleaning $GITREP repository ..."
+      cl -d $GITROOT
+   fi

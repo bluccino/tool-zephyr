@@ -1,0 +1,21 @@
+#!/bin/bash
+# hlp: local help
+
+    if [ "$*" == "-?" ] || [ "$*" == "--help" ] || [ "$*" == "" ]; then
+        ec -r     'Zephyr Development Tools:'
+	      echo      '  bd            # configure board'
+	      echo      '  cl            # clean directory (or directory tree)'
+	      echo      '  run           # run command recursively'
+	      echo      '  we            # invoke west'
+	      vamos -@G 'try these commands with -? or --help option to get additional help'
+        exit 0
+    fi
+
+#===============================================================================
+# print version: zenv --version
+#===============================================================================
+
+    if [ "$*" == "--version" ]; then
+        echo "1.0.1"
+        return 0 2>/dev/null || exit 0  # safe return/exit
+    fi

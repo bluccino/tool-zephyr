@@ -1,0 +1,144 @@
+#!/bin/bash
+# run: run a build command in all subdirectories
+
+  if [ "$*" == "-?" ] || [ "$*" == "--help" ]; then
+      echo '   usage: run <directory> <cmd> # run a commmand in subdirectorey recursively'
+      echo '          run lessons nin -pm   # prestine build all projects in subdirectories'
+      echo '          run lessons ls        # list directory in all projects in subdirectories'
+      echo '          run lessons pwd       # print path in all projects in subdirectories'
+      echo '          run --version         # show version'
+      echo ''
+      echo '   more commands'
+      echo '          run -o build.log lessons nin -pm  # output error log'
+      echo '          run -o build.log lessons/02* nin -pm  # output error log'
+      #echo ''
+      #echo '   see also: nin'
+      exit 1
+   fi
+
+#===============================================================================
+# print version: run --version
+#===============================================================================
+
+   if [ "$*" == "--version" ]; then
+      echo "1.0.2"; exit 0
+   fi
+
+#===============================================================================
+# check args
+#===============================================================================
+
+   if [ "$*" == "" ]; then
+      ec -r "*** error run: 2 args or more expected - see 'run -?'"
+      exit 1
+   fi
+
+   if [ "$2" == "" ]; then
+      ec -r "*** error run: 2 args or more expected - see 'run -?'"
+      exit 1
+   fi
+
+#===============================================================================
+# extract options
+#===============================================================================
+
+   OPTS=''
+   OUTPUT=''
+   BUILD=`pwd`/build
+   SUMMARY=''
+
+   if [ "$1" == "-o" ] && [ "$2" != "" ]; then
+      if [ ! -d $BUILD ]; then
+         ec -y "mkdir $BUILD"
+         mkdir $BUILD
+      fi
+
+      SUMMARY='true'
+      OUTPUT="$BUILD/$2"
+      ec -y OUTPUT=$OUTPUT
+      rm -f $OUTPUT            # remove potentially existing output file
+
+      OPTS=$OPTS" -a $OUTPUT"
+      shift; shift             # 2x args shift
+   fi
+
+   if [ "$1" == "-a" ] && [ "$2" != "" ]; then
+      SUMMARY=''
+      OUTPUT="$2"
+      OPTS=$OPTS" -a $OUTPUT"
+      shift; shift             # 2x args shift
+   fi
+
+#===============================================================================
+# run test
+#===============================================================================
+
+   DIR="$1"
+   shift
+   COMMAND="$*"
+   PREFIX=""
+   PREFIX=$PREFIX" 00 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15 16 17 18 19"
+   PREFIX=$PREFIX" 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39"
+   PREFIX=$PREFIX" 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59"
+   PREFIX=$PREFIX" 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79"
+   PREFIX=$PREFIX" 80 81 82 83 84 85 86 87 88 89 90 91 92 93 94 95 96 97 98 99"
+
+   if [ -d "$DIR" ]; then
+      #ec -y "      run @ $DIR: $COMMAND"
+      cd $DIR
+      if [ -d src ]; then
+         ec -c "run @ $DIR: $COMMAND"
+
+            # now actually run command (and extruct return value)
+
+         ERR=''
+         $COMMAND || ERR=1
+
+         if [ "$ERR" == "" ]; then
+            ec -g "ok: $COMMAND @ "`pwd`
+         else
+            ec -r "*** error: $COMMAND @ "`pwd`
+         fi
+
+         if [ "$OUTPUT" != "" ]; then
+            if [ "$ERR" == "" ]; then
+		    			 ec -g "ok: $COMMAND @ "`pwd` >>$OUTPUT
+				    else
+               ec -r "*** error: $COMMAND @ "`pwd` >>$OUTPUT
+				    fi
+         fi
+      fi
+
+        # after building run command recursively in SUBDIRS if there is a src
+
+      for SUBDIR in *
+      do
+         FOUND=''
+         for ITEM in $PREFIX
+         do
+            if [ "$ITEM"* == "$SUBDIR" ]; then
+              FOUND=$SUBDIR
+              #ec -g "found $SUBDIR"
+            fi
+         done
+         DIRPATH=`pwd`/$SUBDIR
+         #ec -c "   $DIRPATH"
+         if [ "$FOUND" != "" ] && [ -d "$DIRPATH" ]; then
+             #ec -m "      run $DIRPATH $COMMAND"
+             run $OPTS $DIRPATH $COMMAND
+         fi
+      done
+   else
+      ec -r "*** error: no directory: $DIR"
+      exit 1
+   fi
+
+#===============================================================================
+# occasionally print summary
+#===============================================================================
+
+   if [ "$SUMMARY" == "true" ]; then
+     echo ''
+     echo 'Summary:'
+     cat $OUTPUT
+   fi
