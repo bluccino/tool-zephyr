@@ -69,7 +69,7 @@
 #-------------------------------------------------------------------------------
 
    if [ "$*" == "--version" ] || [ "$*" == "--v" ]; then
-      echo "1.0.16"
+      echo "1.0.17"
       return 0 2>/dev/null || exit 0  # safe return/exit
    fi
 
@@ -159,6 +159,186 @@
       ec -y 'in separate steps:'
       echo  '  $ we -b  # build project'
       echo  '  $ we -r  # run project'
+      exit 0
+   fi
+
+#===============================================================================
+# run a telnet terminal: we --telnet <port>
+# - if <port> argument is not specified the port specified by $TELPORT is used
+# - if $TELPORT is also not specified then default port 19024 is used
+#===============================================================================
+
+   if [ "$1" == "--telnet" ]; then
+      if [ "$3" != "" ]; then
+        ec -r "error: we $*"
+        we -?
+        exit 1
+      fi
+
+      if [ "`which telnet`" == "" ]; then
+         ec -r 'error: telnet is not installed!'
+         echo  '       please install telnet first, before proceeding'
+         exit 1
+      fi
+
+      if [ "$TELPORT" == "" ]; then
+         TELPORT=19024
+      fi
+
+      if [ "$2" != "" ]; then
+         TELPORT=$2
+      fi
+
+      while [ "1" == "1" ]; do
+         ec -y "telnet localhost $TELPORT (quit with <ctrl-c>)"
+         telnet localhost $TELPORT  # telnet connect using local port $TELPORT
+         clear
+         ec -g "Telnet Terminal: connect to localhost: $TELPORT"
+         echo  "quit with <ctrl-c>"
+         sleep 0.5
+      done
+      exit 0
+   fi
+
+#===============================================================================
+# run a tio terminal: we --tio <usb>
+# - if <usb> argument is not specified then a trial is made for automatic
+#   identification of a dongle USB device
+#===============================================================================
+
+   if [ "$1" == "--tio" ]; then
+      if [ "$3" != "" ]; then
+        ec -r "error: we $*"
+        we -?
+        exit 1
+      fi
+
+      if [ "`which tio`" == "" ]; then
+         ec -r 'error: tio is not installed!'
+         echo  '       please install tio first, before proceeding'
+         exit 1
+      fi
+
+        # get a list of possible USB devices
+
+      if [ "$2" != "" ]; then
+         USB=$2; N=1
+      else
+         USB=`ls /dev/tty* | grep usb | grep -v usbmodem000`
+         N=`ls /dev/tty* | grep usb | grep -v usbmodem000 | wc -w`
+      fi
+
+      if [ $N == 0 ]; then
+         ec -r 'no USB devices found'
+         exit 1
+      elif [ $N == 1 ]; then
+         ec -y "tio $USB  # quit with <ctrl-t> <q>"
+         tio $USB
+         exit 0
+      else
+           select DEV in $USB
+          do
+            ec -y "tio $DEV  # quit with <ctrl-t> <q>"
+             tio $DEV
+             exit 0
+          done
+      fi
+
+      exit 0
+   fi
+
+#===============================================================================
+# run a tio terminal: we --tio-wsl <usb> # To run on Windows WSL
+# - if <usb> argument is not specified then a trial is made for automatic
+#   identification of a dongle USB device
+#===============================================================================
+
+   if [ "$1" == "--tio-wsl" ]; then
+      if [ "$3" != "" ]; then
+        ec -r "error: we $*"
+        we -?
+        exit 1
+      fi
+
+      if [ "`which tio`" == "" ]; then
+         ec -r 'error: tio is not installed!'
+         echo  '       please install tio first, before proceeding'
+         exit 1
+      fi
+
+        # get a list of possible USB devices
+
+      if [ "$2" != "" ]; then
+         USB=$2; N=1
+      else
+         DEVICES=`ls /dev/serial/by-id`
+         USB=''
+         for DEV in $DEVICES
+         do
+            USB=$USB' /dev/serial/by-id/'$DEV
+         done
+         # ec -y $USB
+         N=`ls /dev/serial/by-id | wc -w`
+         # ec -y $N
+      fi
+
+      if [ $N == 0 ]; then
+         ec -r 'no USB devices found'
+         exit 1
+      elif [ $N == 1 ]; then
+         ec -y "tio $USB  # quit with <ctrl-t> <q>"
+         tio $USB
+         exit 0
+      else
+   	     select DEV in $USB
+	       do
+            ec -y "tio $DEV  # quit with <ctrl-t> <q>"
+	          tio $DEV
+	          exit 0
+	       done
+      fi
+
+      exit 0
+   fi
+
+#===============================================================================
+# start tio terminal with auto USB detection: we -t0
+#===============================================================================
+
+   if [ "$*" == "-t0" ]; then
+      if [ -d "/dev/serial" ]
+      then # windows WSL system
+         we --tio-wsl || exit 1
+      else # macOS or Linux system
+         we --tio || exit 1
+      fi
+      exit 0
+   fi
+
+#===============================================================================
+# start telnet on port 19024: we -t1
+#===============================================================================
+
+   if [ "$*" == "-t1" ]; then
+      we --telnet 19024 || exit 1
+      exit 0
+   fi
+
+#===============================================================================
+# start telnet on port 19025: we -t2
+#===============================================================================
+
+   if [ "$*" == "-t2" ]; then
+      we --telnet 19025 || exit 1
+      exit 0
+   fi
+
+#===============================================================================
+# start telnet on port 19026: we -t3
+#===============================================================================
+
+   if [ "$*" == "-t3" ]; then
+      we --telnet 19026 || exit 1
       exit 0
    fi
 
@@ -393,147 +573,6 @@
    fi
 
 #===============================================================================
-# run a telnet terminal: we --telnet <port>
-# - if <port> argument is not specified the port specified by $TELPORT is used
-# - if $TELPORT is also not specified then default port 19024 is used
-#===============================================================================
-
-   if [ "$1" == "--telnet" ]; then
-      if [ "$3" != "" ]; then
-        ec -r "error: we $*"
-        we -?
-        exit 1
-      fi
-
-      if [ "`which telnet`" == "" ]; then
-         ec -r 'error: telnet is not installed!'
-         echo  '       please install telnet first, before proceeding'
-         exit 1
-      fi
-
-      if [ "$TELPORT" == "" ]; then
-         TELPORT=19024
-      fi
-
-      if [ "$2" != "" ]; then
-         TELPORT=$2
-      fi
-
-      while [ "1" == "1" ]; do
-         ec -y "telnet localhost $TELPORT (quit with <ctrl-c>)"
-         telnet localhost $TELPORT  # telnet connect using local port $TELPORT
-         clear
-         ec -g "Telnet Terminal: connect to localhost: $TELPORT"
-         echo  "quit with <ctrl-c>"
-         sleep 0.5
-      done
-      exit 0
-   fi
-
-#===============================================================================
-# run a tio terminal: we --tio <usb>
-# - if <usb> argument is not specified then a trial is made for automatic
-#   identification of a dongle USB device
-#===============================================================================
-
-   if [ "$1" == "--tio" ]; then
-      if [ "$3" != "" ]; then
-        ec -r "error: we $*"
-        we -?
-        exit 1
-      fi
-
-      if [ "`which tio`" == "" ]; then
-         ec -r 'error: tio is not installed!'
-         echo  '       please install tio first, before proceeding'
-         exit 1
-      fi
-
-        # get a list of possible USB devices
-
-      if [ "$2" != "" ]; then
-         USB=$2; N=1
-      else
-         USB=`ls /dev/tty* | grep usb | grep -v usbmodem000`
-         N=`ls /dev/tty* | grep usb | grep -v usbmodem000 | wc -w`
-      fi
-
-      if [ $N == 0 ]; then
-         ec -r 'no USB devices found'
-         exit 1
-      elif [ $N == 1 ]; then
-         ec -y "tio $USB  # quit with <ctrl-t> <q>"
-         tio $USB
-         exit 0
-      else
-           select DEV in $USB
-          do
-            ec -y "tio $DEV  # quit with <ctrl-t> <q>"
-             tio $DEV
-             exit 0
-          done
-      fi
-
-      exit 0
-   fi
-
-
-
-#===============================================================================
-# run a tio terminal: we --tio-wsl <usb> # To run on Windows WSL
-# - if <usb> argument is not specified then a trial is made for automatic
-#   identification of a dongle USB device
-#===============================================================================
-
-   if [ "$1" == "--tio-wsl" ]; then
-      if [ "$3" != "" ]; then
-        ec -r "error: we $*"
-        we -?
-        exit 1
-      fi
-
-      if [ "`which tio`" == "" ]; then
-         ec -r 'error: tio is not installed!'
-         echo  '       please install tio first, before proceeding'
-         exit 1
-      fi
-
-        # get a list of possible USB devices
-
-      if [ "$2" != "" ]; then
-         USB=$2; N=1
-      else
-         DEVICES=`ls /dev/serial/by-id`
-         USB=''
-         for DEV in $DEVICES
-         do
-            USB=$USB' /dev/serial/by-id/'$DEV
-         done
-         # ec -y $USB
-         N=`ls /dev/serial/by-id | wc -w`
-         # ec -y $N
-      fi
-
-      if [ $N == 0 ]; then
-         ec -r 'no USB devices found'
-         exit 1
-      elif [ $N == 1 ]; then
-         ec -y "tio $USB  # quit with <ctrl-t> <q>"
-         tio $USB
-         exit 0
-      else
-   	     select DEV in $USB
-	       do
-            ec -y "tio $DEV  # quit with <ctrl-t> <q>"
-	          tio $DEV
-	          exit 0
-	       done
-      fi
-
-      exit 0
-   fi
-
-#===============================================================================
 # we --flash-dongle   # flash to dongle(s)
 #===============================================================================
 
@@ -651,47 +690,6 @@
          ec -y "nrfutil dfu usb-serial -pkg $ZIP -p $DEV"
          nrfutil dfu usb-serial -pkg $ZIP -p $DEV
       done
-      exit 0
-   fi
-
-#===============================================================================
-# start tio terminal with auto USB detection: we -t0
-#===============================================================================
-
-   if [ "$*" == "-t0" ]; then
-      if [ -d "/dev/serial" ]
-      then # windows WSL system
-         we --tio-wsl || exit 1
-      else # macOS or Linux system
-         we --tio || exit 1
-      fi
-      exit 0
-   fi
-
-#===============================================================================
-# start telnet on port 19024: we -t1
-#===============================================================================
-
-   if [ "$*" == "-t1" ]; then
-      we --telnet 19024 || exit 1
-      exit 0
-   fi
-
-#===============================================================================
-# start telnet on port 19025: we -t2
-#===============================================================================
-
-   if [ "$*" == "-t2" ]; then
-      we --telnet 19025 || exit 1
-      exit 0
-   fi
-
-#===============================================================================
-# start telnet on port 19026: we -t3
-#===============================================================================
-
-   if [ "$*" == "-t3" ]; then
-      we --telnet 19026 || exit 1
       exit 0
    fi
 
