@@ -110,7 +110,10 @@
 # don't proceed without activated virtual environment
 #-------------------------------------------------------------------------------
 
-   if [ "$VIRTUAL_ENV" == "" ] && [ "$*" != "-l" ] && [ "$*" != "-L" ]; then
+   if [ "$VIRTUAL_ENV" == "" ] && [ "$1" != "-l" ] && [ "$1" != "-L" ] \
+         && [ "$1" != "-t0" ] && [ "$1" != "-t1" ] && [ "$1" != "-t2" ] \
+         && [ "$1" != "-t3" ] && [ "$1" != "--telnet" ] \
+         && [ "$1" != "--tio" ] && [ "$1" != "--tio-wsl" ]; then
       ec -r "error: we $*" >&2
       echo  "       no virtual environment activated!" >&2
       return 1 2>/dev/null || exit 1  # safe return/exit
