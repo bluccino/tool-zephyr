@@ -74,6 +74,16 @@
    fi
 
 #-------------------------------------------------------------------------------
+# don't proceed without activated virtual environment
+#-------------------------------------------------------------------------------
+
+   if [ "VIRTUAL_ENV" == "" ]; then
+      ec -r "error: we $*" >&2
+      echo  "       no virtual environment activated!" >&2
+      return 0 2>/dev/null || exit 0  # safe return/exit
+   fi
+
+#-------------------------------------------------------------------------------
 # examine whether this script is running in sourced/unsourced mode
 # - note: each dispatching clause needs to unset _SOURCED
 #-------------------------------------------------------------------------------
