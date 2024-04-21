@@ -70,7 +70,7 @@
 #-------------------------------------------------------------------------------
 
    if [ "$*" == "--version" ] || [ "$*" == "--v" ]; then
-      echo "1.0.17"
+      echo "1.0.17x"
       return 0 2>/dev/null || exit 0  # safe return/exit
    fi
 
@@ -461,6 +461,7 @@
 
    if [ "$1" == "-b" ] && [ "$2" == "" ]; then
       PROJECT="."
+      ec -y "west build -b $BOARD $PROJECT"
       west build -b $BOARD $PROJECT || exit 1
 
         # in case of a dongle create zip file which we can flash to the dongle
