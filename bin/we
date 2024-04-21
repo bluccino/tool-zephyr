@@ -55,6 +55,7 @@
         echo  '  we --telnet 19024   # run a telnet terminal using port 19024'
         echo  '  we --tio            # run a tio terminal with auto USB detection'
         echo  '  we --tio /dev/usb12 # run a tio terminal woth given USB device'
+        echo  '  we --unlock         # unlock flash memory'
         echo  '  we $ZEPHYR_BASE/samples/hello_world'
       fi
 
@@ -806,6 +807,18 @@
      fi
      exit 0
   fi
+
+
+#===============================================================================
+# we --unlock  # unlock flash memory'
+#===============================================================================
+
+   if [ "$*" == "--unlock" ]; then
+      ec -g '=== unlock nRF52 flash area of target ...'
+      ec -y "nrfjprog --family nRF52 --recover --snr ${SEGGER}"
+      nrfjprog --family nRF52 --recover --snr ${SEGGER} || exit 1
+      exit 0
+   fi
 
 #===============================================================================
 # cannot deal with anything else ...
