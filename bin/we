@@ -77,10 +77,10 @@
 # don't proceed without activated virtual environment
 #-------------------------------------------------------------------------------
 
-   if [ "VIRTUAL_ENV" == "" ]; then
+   if [ "$VIRTUAL_ENV" == "" ]; then
       ec -r "error: we $*" >&2
       echo  "       no virtual environment activated!" >&2
-      return 0 2>/dev/null || exit 0  # safe return/exit
+      return 1 2>/dev/null || exit 1  # safe return/exit
    fi
 
 #-------------------------------------------------------------------------------
