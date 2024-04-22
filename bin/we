@@ -70,7 +70,7 @@
 #-------------------------------------------------------------------------------
 
    if [ "$*" == "--version" ] || [ "$*" == "--v" ]; then
-      echo "1.0.17"
+      echo "1.0.18"
       return 0 2>/dev/null || exit 0  # safe return/exit
    fi
 
@@ -500,21 +500,18 @@
 # - export SEGGER=xxxxxxxxx for flashing with nrfjprog
 #===============================================================================
 
-   if [ "$*" == "-f" ]
-   then
-#     if [ "$SEGGER" != "" ]; then  # if SEGGER is defined then use nrfjprog
-#        ec -y "nrfjprog --reset --family nRF52 --program" \
-#              "$BUILD/zephyr/zephyr.hex --snr ${SEGGER}"
-#        nrfjprog --reset --family nRF52 --program \
-#               $BUILD/zephyr/zephyr.hex --snr ${SEGGER} || exit 1
-#     else
-          if [ "$BOARD" == "nrf52840dongle_nrf52840" ]; then
-              we --flash-dongle
-          else
-              ec -y "west flash --build-dir build_$BOARD"
-              west flash --build-dir $BUILD || exit 1
-          fi
-#     fi
+   if [ "$*" == "-f" ]; then
+      if [ "$BOARD" == "nrf52840dongle_nrf52840" ]; then
+         we --flash-dongle || exit 1
+      elif [ "$SEGGER" != "" ]; then  # use nrfjprog if $SEGGER is defined
+         ec -y "nrfjprog --reset --family nRF52 --program" \
+               "$BUILD/zephyr/zephyr.hex --snr ${SEGGER}"
+         nrfjprog --reset --family nRF52 --program \
+               $BUILD/zephyr/zephyr.hex --snr ${SEGGER} || exit 1
+      else
+         ec -y "west flash --build-dir build_$BOARD"
+         west flash --build-dir $BUILD || exit 1
+      fi
       exit 0
    fi
 
