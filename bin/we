@@ -15,12 +15,13 @@
       echo    '  we -b <project>     # build specific project'
       echo    '  we -c               # clean build folder'
       echo    '  we -d               # build & run on dongle'
-      echo    '  we -e               # show board and zephyr setup'
+      echo    '  we -e               # erase flash memory'
       echo    '  we -f               # flash binary to target'
       echo    '  we -k               # open Kconfig menu'
       echo    '  we -p               # pristine build/flash/run in cur. dir (dongle hex => $TMP)'
       echo    '  we -r               # run built project'
       echo    '  we -r 19024         # run built project, send output to port 19024'
+      echo    '  we -z               # show board and zephyr setup'
       ec -g   'deal with Zephyr version labels:'
       echo    '  . we z3.6:          # activate labeled Zephyr environment!'
       echo    "  we -! z3.6: comment # define Zephyr label"
@@ -111,8 +112,8 @@
 #-------------------------------------------------------------------------------
 
    if [ "$VIRTUAL_ENV" == "" ] && [ "$1" != "-l" ] && [ "$1" != "-L" ] \
-         && [ "$1" != "-t0" ] && [ "$1" != "-t1" ] && [ "$1" != "-t2" ] \
-         && [ "$1" != "-t3" ] && [ "$1" != "--telnet" ] \
+         && [ "$1" != "-t" ] && [ "$1" != "-t0" ] && [ "$1" != "-t1" ] \
+         && [ "$1" != "-t2" ] && [ "$1" != "-t3" ] && [ "$1" != "--telnet" ] \
          && [ "$1" != "--tio" ] && [ "$1" != "--tio-wsl" ]; then
       ec -r "error: we $*" >&2
       echo  "       no virtual environment activated!" >&2
@@ -333,7 +334,7 @@
 # start telnet on port 19024: we -t1
 #===============================================================================
 
-   if [ "$*" == "-t1" ]; then
+   if [ "$*" == "-t1" ] || [ "$*" == "-t" ]; then
       we --telnet 19024 || exit 1
       exit 0
    fi
@@ -357,10 +358,10 @@
    fi
 
 #===============================================================================
-# $ we -e  # show board and zephyr setup'
+# $ we -z  # show board and zephyr setup'
 #===============================================================================
 
-   if [ "$*" == "-e" ]; then
+   if [ "$*" == "-z" ]; then
       ec -g 'West:'
       if [ "`which west`" == "" ]; then
          ec -r "  west is not available (setup a zephyr environment)"
@@ -504,6 +505,9 @@
       if [ "$BOARD" == "nrf52840dongle_nrf52840" ]; then
          we --flash-dongle || exit 1
       elif [ "$SEGGER" != "" ]; then  # use nrfjprog if $SEGGER is defined
+         we -e                        # erase flash memory area
+         ec -g '=== flashing binary to target ...'
+
          ec -y "nrfjprog --reset --family nRF52 --program" \
                "$BUILD/zephyr/zephyr.hex --snr ${SEGGER}"
          nrfjprog --reset --family nRF52 --program \
@@ -528,6 +532,17 @@
 
       exit 0
    fi
+
+#===============================================================================
+# we -e:  # erase flash memory
+#===============================================================================
+
+  if [ "$*" == "-e" ]; then   # erase flash memory area
+      ec -g '=== erasing nRF52 flash area of target ...'
+      ec -y "nrfjprog --family nRF52 --eraseall --snr ${SEGGER}"
+      nrfjprog --family nRF52 --eraseall --snr ${SEGGER} || exit 1
+      exit 0
+  fi
 
 #===============================================================================
 # list (west) supported HW boards: we --boards
