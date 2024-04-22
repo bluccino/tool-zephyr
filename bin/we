@@ -373,8 +373,16 @@
 
       bash bd.sh
 
-      ec -g 'Zephyr version:'
-      echo "  $ZVERSION (path: $ZEPHYR), BOARD: $BRDID ($BOARD)"
+      if [ "$VIRTUAL_ENV" == "" ]; then
+         ZPATH="???"
+         ZVERS="???"
+      else
+         ZPATH=$(dirname $VIRTUAL_ENV)
+         ZVERS=$(basename $ZPATH)
+      fi
+
+      ec -g "Zephyr version: $ZVERS"
+      echo "  path: $ZPATH"
 
       return 0 2>/dev/null || exit 0  # safe return/exit
    fi
