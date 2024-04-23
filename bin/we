@@ -71,7 +71,7 @@
 #-------------------------------------------------------------------------------
 
    if [ "$*" == "--version" ] || [ "$*" == "--v" ]; then
-      echo "1.0.18"
+      echo "1.0.19"
       return 0 2>/dev/null || exit 0  # safe return/exit
    fi
 
@@ -470,6 +470,12 @@
 
    if [ "$1" == "-b" ] && [ "$2" == "" ]; then
       PROJECT="."
+
+      if [ -d "$(gih)/boards" ]; then  # if there is a boards folder in git home
+         ec -y "export BOARD_ROOT=$(gih)"
+         export BOARD_ROOT=$(gih)
+      fi
+
       ec -y "west build -b $BOARD $PROJECT"
       west build -b $BOARD $PROJECT || exit 1
 
