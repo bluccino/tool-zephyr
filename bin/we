@@ -71,7 +71,7 @@
 #-------------------------------------------------------------------------------
 
    if [ "$*" == "--version" ] || [ "$*" == "--v" ]; then
-      echo "1.0.19"
+      echo "1.0.20"
       return 0 2>/dev/null || exit 0  # safe return/exit
    fi
 
@@ -576,8 +576,12 @@
 
    if [ "$1" == "-r" ] && [ "$3" == "" ]; then
       if [ "$BOARD" == "qemu_x86" ] || [ "$BOARD" == "qemu_cortex_m3" ]; then
+        ec -y 'export QEMU_EXTRA_FLAGS="-icount shift=0,align=off,sleep=on -rtc base=localtime,clock=host"'
+        export QEMU_EXTRA_FLAGS="-icount shift=0,align=off,sleep=on -rtc base=localtime,clock=host"
+
         ec -y west build -t run
         west build -t run || exit 1
+
         exit 0
       fi
 
