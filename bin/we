@@ -476,6 +476,11 @@
          export BOARD_ROOT=$(gih)
       fi
 
+      if [ "$BOARD" == "qemu_x86" ] || [ "$BOARD" == "qemu_cortex_m3" ]; then
+        ec -y 'export QEMU_EXTRA_FLAGS="-icount shift=0,align=off,sleep=on -rtc base=localtime,clock=host"'
+        export QEMU_EXTRA_FLAGS="-icount shift=0,align=off,sleep=on -rtc base=localtime,clock=host"
+      fi
+
       ec -y "west build -b $BOARD $PROJECT"
       west build -b $BOARD $PROJECT || exit 1
 
@@ -568,7 +573,7 @@
    fi
 
 #===============================================================================
-# run (a built) program: we -r <port>
+# we -r # run (a built) program: we -r <port>
 # - for BOARD=qemu_x86 or BOARD=qemu_qemu_cortex_m3 => QEMU emulator is invoked
 # - otherwise JLinkExe is consulted to run application with output sent to
 #   telnet port $TELPORT (if not set then port 19024 is used by default)
@@ -576,9 +581,6 @@
 
    if [ "$1" == "-r" ] && [ "$3" == "" ]; then
       if [ "$BOARD" == "qemu_x86" ] || [ "$BOARD" == "qemu_cortex_m3" ]; then
-        ec -y 'export QEMU_EXTRA_FLAGS="-icount shift=0,align=off,sleep=on -rtc base=localtime,clock=host"'
-        export QEMU_EXTRA_FLAGS="-icount shift=0,align=off,sleep=on -rtc base=localtime,clock=host"
-
         ec -y west build -t run
         west build -t run || exit 1
 
