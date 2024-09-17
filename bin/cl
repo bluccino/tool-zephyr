@@ -17,7 +17,7 @@
 #===============================================================================
 
    if [ "$*" == "--version" ] || [ "$*" == "--v" ]; then
-      echo "1.0.2"; 
+      echo "1.0.3";
       exit 0
    fi
 
@@ -127,23 +127,31 @@
            #pwd
            #echo "clean emSession: " *.emSession
 
-           if [ -f *.emSession ]; then
+           FILES=$(ls *.emSession 2>/dev/null)
+           for FILE in $FILES
+           do
+             if [ -f "$FILE" ]; then
                if [ "$MSG" == "0" ]; then
                   ec -c "  cleaning $2 ..."
                   MSG=1
                fi
-               ec -b "      remove in $2 file(s) "`echo *.emSession`
-               rm *.emSession
-           fi
+               ec -b "      remove in $2 file "`echo $FILE`
+               rm $FILE
+             fi
+           done
 
-           if [ -f *.jlink ]; then
+           FILES=$(ls *.jlink 2>/dev/null)
+           for FILE in $FILES
+           do
+             if [ -f "$FILE" ]; then
                if [ "$MSG" == "0" ]; then
                   ec -c "  cleaning $2 ..."
                   MSG=1
                fi
-               ec -b "      remove in $2 file(s) "`echo *.jlink`
-               rm *.jlink
-           fi
+               ec -b "      remove in $2 file "`echo $FILE`
+               rm $FILE
+             fi
+           done
 
            ARGS=`ls`
            for ARG in $ARGS
