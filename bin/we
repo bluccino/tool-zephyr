@@ -71,7 +71,7 @@
 #-------------------------------------------------------------------------------
 
    if [ "$*" == "--version" ] || [ "$*" == "--v" ]; then
-      echo "1.0.21"
+      echo "1.0.22"
       return 0 2>/dev/null || exit 0  # safe return/exit
    fi
 
@@ -174,6 +174,10 @@
       ec -y 'in separate steps:'
       echo  '  $ we -b  # build project'
       echo  '  $ we -r  # run project'
+      ec -y 'extra flags:'
+      echo  '  $ export QEMU_EXTRA_FLAGS=... # use specific emulator extra flags'
+      echo  '  $ export QEMU_EXTRA_FLAGS=""  # execute as fast as possible'
+      echo  '  $ unset QEMU_EXTRA_FLAGS      # setup (close to) real timing'
       exit 0
    fi
 
@@ -477,8 +481,12 @@
       fi
 
       if [ "$BOARD" == "qemu_x86" ] || [ "$BOARD" == "qemu_cortex_m3" ]; then
-        ec -y 'export QEMU_EXTRA_FLAGS="-icount shift=0,align=off,sleep=on -rtc base=localtime,clock=host"'
-        export QEMU_EXTRA_FLAGS="-icount shift=0,align=off,sleep=on -rtc base=localtime,clock=host"
+        if [ ! "${QEMU_EXTRA_FLAGS+xyz}" ]; then  # unset extra flags
+          QXF="-icount shift=0,align=off,sleep=on -rtc base=localtime,clock=host"
+        fi
+
+        ec -y 'export QEMU_EXTRA_FLAGS="'$QXF'"'
+        export QEMU_EXTRA_FLAGS=$QXF
       fi
 
       ec -y "west build -b $BOARD $PROJECT"
