@@ -71,7 +71,7 @@
 #-------------------------------------------------------------------------------
 
    if [ "$*" == "--version" ] || [ "$*" == "--v" ]; then
-      echo "1.0.22"
+      echo "1.0.23"
       return 0 2>/dev/null || exit 0  # safe return/exit
    fi
 
@@ -475,6 +475,16 @@
    if [ "$1" == "-b" ] && [ "$2" == "" ]; then
       PROJECT="."
 
+      if [ -f $BUILD/zephyr/.config ]; then
+         BOARD_CONFIG=`cat $BUILD/zephyr/.config | grep CONFIG_BOARD=`
+         BOARD_TARGET='CONFIG_BOARD="'$BOARD'"'
+         if [ "$BOARD_CONFIG" != "$BOARD_TARGET" ]; then
+            ec -g "=== board mismatch: delete $BUILD folder"
+            ec -y "rm -rf $BUILD"
+            rm -rf $BUILD
+         fi
+      fi
+
       if [ -d "$(gih)/boards" ]; then  # if there is a boards folder in git home
          ec -y "export BOARD_ROOT=$(gih)"
          export BOARD_ROOT=$(gih)
@@ -496,7 +506,10 @@
 
       if [ "$BOARD" == "nrf52840dongle_nrf52840" ]; then
          ZIP=$BUILD/zephyr/app-dongle.zip
-         we ---create-zip $ZIP
+         HEX=$BUILD/zephyr/zephyr.hex
+         if [ ! -f $ZIP ] || [ $ZIP -ot $HEX ]; then
+           we ---create-zip $ZIP
+         fi
       fi
       exit 0
    fi
@@ -645,22 +658,21 @@
 #===============================================================================
 
    if [ "$*" == "--dongle-osx" ]; then
-    _DEVICES=`ls /dev/tty* | grep usb | grep -v usbmodem000`
-    #echo $_DEVICES
+      _DEVICES=`ls /dev/tty* | grep usb | grep -v usbmodem000`
+      #echo $_DEVICES
 
-    for _DEV in $_DEVICES
-    do
-       _LEN=`echo $_DEV | wc -c`
-       _EXPECT=`echo /dev/tty.usbmodemF53C902FCD6F1 | wc -c`
+      for _DEV in $_DEVICES
+      do
+         _LEN=`echo $_DEV | wc -c`
+         _EXPECT=`echo /dev/tty.usbmodemF53C902FCD6F1 | wc -c`
 
-       if [ "$_LEN" == "$_EXPECT" ]; then
-          echo $_DEV
-       fi
-    done
-    exit 0
+         if [ "$_LEN" == "$_EXPECT" ]; then
+            echo $_DEV
+         fi
+      done
+      exit 0
 
-    _N=`ls /dev/tty* | grep usb | grep -v usbmodem000 | wc -w`
-
+      _N=`ls /dev/tty* | grep usb | grep -v usbmodem000 | wc -w`
       exit 0
    fi
 
