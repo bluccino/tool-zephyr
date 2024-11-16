@@ -71,7 +71,7 @@
 #-------------------------------------------------------------------------------
 
    if [ "$*" == "--version" ] || [ "$*" == "--v" ]; then
-      echo "1.0.23"
+      echo "1.0.24"
       return 0 2>/dev/null || exit 0  # safe return/exit
    fi
 
@@ -476,10 +476,10 @@
       PROJECT="."
 
       if [ -f $BUILD/zephyr/.config ]; then
-         BOARD_CONFIG=`cat $BUILD/zephyr/.config | grep CONFIG_BOARD=`
-         BOARD_TARGET='CONFIG_BOARD="'$BOARD'"'
+         BOARD_CONFIG=`cat $BUILD/zephyr/.config | grep CONFIG_BOARD_TARGET=`
+         BOARD_TARGET='CONFIG_BOARD_TARGET="'$BOARD'"'
          if [ "$BOARD_CONFIG" != "$BOARD_TARGET" ]; then
-            ec -g "=== board mismatch: delete $BUILD folder"
+            ec -g "=== board mismatch: delete $BUILD folder ($BOARD_CONFIG <-> $BOARD_TARGET)"
             ec -y "rm -rf $BUILD"
             rm -rf $BUILD
          fi
