@@ -71,7 +71,7 @@
 #-------------------------------------------------------------------------------
 
    if [ "$*" == "--version" ] || [ "$*" == "--v" ]; then
-      echo "1.0.24"
+      echo "1.0.26"
       return 0 2>/dev/null || exit 0  # safe return/exit
    fi
 
@@ -433,7 +433,8 @@
         # if board identifier refers to a dongle we copy zephyr.hex to $TMP
         # else we run program
 
-      if [ "$BOARD" == "nrf52840dongle_nrf52840" ]; then
+      if [ "$BOARD" == "nrf52840dongle_nrf52840" ] || \
+         [ "$BOARD" == "nrf52840dongle/nrf52840" ]; then
         we --copy-tmp || exit 1
       elif [ "$*" != "--pristine" ]; then
         if [ "$BOARD" != "qemu_x86" ] && [ "$BOARD" != "qemu_cortex_m3" ]; then
@@ -504,7 +505,8 @@
 
         # in case of a dongle create zip file which we can flash to the dongle
 
-      if [ "$BOARD" == "nrf52840dongle_nrf52840" ]; then
+      if [ "$BOARD" == "nrf52840dongle_nrf52840" ] ||
+         [ "$BOARD" == "nrf52840dongle/nrf52840" ]; then
          ZIP=$BUILD/zephyr/app-dongle.zip
          HEX=$BUILD/zephyr/zephyr.hex
          if [ ! -f $ZIP ] || [ $ZIP -ot $HEX ]; then
@@ -536,32 +538,6 @@
    fi
 
 #===============================================================================
-# flash binary to target: we -f
-# - undef SEGGER if you want to flash with west flash runner
-# - export SEGGER=xxxxxxxxx for flashing with nrfjprog
-#===============================================================================
-
-   if [ "$*" == "-f" ]; then
-      if [ "$BOARD" == "nrf52840dongle_nrf52840" ]; then
-         we --flash-dongle || exit 1
-      elif [ "$SEGGER" != "" ]; then  # use nrfjprog if $SEGGER is defined
-         we -e                        # erase flash memory area
-         ec -g '=== flashing binary to target ...'
-
-         ec -y "nrfjprog --reset --family nRF52 --program" \
-               "$BUILD/zephyr/zephyr.hex --snr ${SEGGER}"
-         nrfjprog --reset --family nRF52 --program \
-               $BUILD/zephyr/zephyr.hex --snr ${SEGGER} || exit 1
-      else
-         ec -y "west flash --build-dir build_$BOARD"
-         west flash --build-dir $BUILD || exit 1
-      fi
-      exit 0
-   fi
-
-
-
-#===============================================================================
 # we -d   # build & run on dongle'
 #===============================================================================
 
@@ -583,6 +559,31 @@
       nrfjprog --family nRF52 --eraseall --snr ${SEGGER} || exit 1
       exit 0
   fi
+
+#===============================================================================
+# flash binary to target: we -f
+# - undef SEGGER if you want to flash with west flash runner
+# - export SEGGER=xxxxxxxxx for flashing with nrfjprog
+#===============================================================================
+
+   if [ "$*" == "-f" ]; then
+      if [ "$BOARD" == "nrf52840dongle_nrf52840" ] ||
+         [ "$BOARD" == "nrf52840dongle/nrf52840" ]; then
+         we --flash-dongle || exit 1
+      elif [ "$SEGGER" != "" ]; then  # use nrfjprog if $SEGGER is defined
+         #we -e                        # erase flash memory area
+         ec -g '=== flashing binary to target ...'
+
+         ec -y "nrfjprog --reset --family nRF52 --program" \
+               "$BUILD/zephyr/zephyr.hex --snr ${SEGGER}"
+         nrfjprog --reset --family nRF52 --program \
+               $BUILD/zephyr/zephyr.hex --snr ${SEGGER} || exit 1
+      else
+         ec -y "west flash --build-dir build_$BOARD"
+         west flash --build-dir $BUILD || exit 1
+      fi
+      exit 0
+   fi
 
 #===============================================================================
 # list (west) supported HW boards: we --boards
@@ -774,11 +775,13 @@
         # if board identifier refers to a dongle we copy zephyr.hex to $TMP
         # else we run program
 
-      if [ "$BOARD" == "nrf52840dongle_nrf52840" ]; then
+      if [ "$BOARD" == "nrf52840dongle_nrf52840" ] ||
+         [ "$BOARD" == "nrf52840dongle/nrf52840" ]; then
         # we --copy-tmp || exit 1
         we --flash-dongle
       else
         if [ "$BOARD" != "qemu_x86" ] && [ "$BOARD" != "qemu_cortex_m3" ]; then
+          we -e || exit 1  # erase memory
           we -f || exit 1  # flash program
         fi
         we -r || exit 1  # run program
